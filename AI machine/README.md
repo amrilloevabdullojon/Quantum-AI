@@ -16,7 +16,7 @@ Working local product for crypto portfolio risk analysis and manual QUBO/QAOA op
 ```bash
 npm install
 docker compose up -d postgres
-npm run build
+npm run check
 npm run dev
 ```
 
@@ -25,6 +25,16 @@ Local URLs:
 - App: `http://127.0.0.1:8787/`
 - Health: `http://127.0.0.1:8787/health`
 - API: `http://127.0.0.1:8787/api/*`
+
+Useful commands:
+
+```bash
+npm run typecheck       # TypeScript only
+npm run test            # Vitest suite
+npm run build           # Production frontend build
+npm run check           # Tests + production build
+npm run health          # Check http://127.0.0.1:8787/health
+```
 
 ## Environment
 
@@ -95,15 +105,46 @@ COINGECKO_DEMO_API_KEY=real-key
 GROQ_API_KEY=real-key
 ```
 
-2. Build and start on the server:
+2. Validate the app and Docker Compose configuration:
 
 ```bash
-docker compose --env-file .env.production up -d --build
+npm ci
+npm run deploy:check
 ```
 
-3. Install the Nginx config from `deploy/nginx.conf`, replace `domen.domen` with the real domains, then issue TLS certificates and reload Nginx.
+3. Build and start on the server:
 
-4. Register or sign in with an email listed in `ADMIN_EMAILS`. That account will have admin access even if the database `is_admin` flag is still false.
+```bash
+npm run deploy:up
+```
+
+4. Check health and logs:
+
+```bash
+npm run health
+npm run deploy:logs
+```
+
+5. Install the Nginx config from `deploy/nginx.conf`, replace `domen.domen` with the real domains, then issue TLS certificates and reload Nginx.
+
+6. Register or sign in with an email listed in `ADMIN_EMAILS`. That account will have admin access even if the database `is_admin` flag is still false.
+
+Docker image details:
+
+- Runtime base: `node:20-alpine`.
+- Exposed port: `8787` by default.
+- Health endpoint: `/health`.
+- Container start command: `node server/local-api.mjs`.
+- Required database variable: `DATABASE_URL`.
+- `requirements.txt` is intentionally empty because the production app has no Python runtime dependencies.
+
+Node-only deploy without Docker is also possible:
+
+```bash
+npm ci
+npm run build
+NODE_ENV=production HOST=0.0.0.0 LOCAL_API_PORT=8787 npm start
+```
 
 ## Admin Panel
 

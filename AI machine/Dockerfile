@@ -20,9 +20,14 @@ RUN npm run build
 
 FROM node:20-alpine AS runtime
 
+LABEL org.opencontainers.image.title="Quantum-AI Wealth Guardian"
+LABEL org.opencontainers.image.description="Crypto portfolio risk analysis app with Node API, React UI, PostgreSQL auth, and local QAOA optimizer."
+
+ARG APP_PORT=8787
+
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
-ENV LOCAL_API_PORT=8787
+ENV LOCAL_API_PORT=$APP_PORT
 
 WORKDIR /app
 
@@ -32,6 +37,10 @@ RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/server ./server
 
-EXPOSE 8787
+USER node
+
+EXPOSE $APP_PORT
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD node -e "const port=process.env.LOCAL_API_PORT||8787; fetch('http://127.0.0.1:'+port+'/health').then((response)=>process.exit(response.ok?0:1)).catch(()=>process.exit(1));"
 
 CMD ["node", "server/local-api.mjs"]
