@@ -7,6 +7,7 @@ import { createAdminStore } from "./adminStore.mjs";
 import { createPostgresDatabase } from "./postgres.mjs";
 import { createPortfolioStore } from "./portfolioStore.mjs";
 import { createQuantumRunStore } from "./quantumRunStore.mjs";
+import { createStripeBillingService } from "./stripeBilling.mjs";
 import { loadLocalEnv } from "./env.mjs";
 import { buildPortfolioSnapshot } from "./portfolioEngine.mjs";
 import { simulateLocalQaoa } from "./localQuantumOptimizer.mjs";
@@ -28,6 +29,7 @@ const authService = createAuthService({ port, db });
 const adminStore = createAdminStore({ db });
 const portfolioStore = createPortfolioStore({ db });
 const quantumRunStore = createQuantumRunStore({ db });
+const stripeBillingService = createStripeBillingService({ db, port });
 
 const contentTypes = {
   ".html": "text/html; charset=utf-8",
@@ -99,6 +101,23 @@ const readJsonBody = async (request) => {
   } catch {
     throw new HttpError(400, "Invalid JSON body.");
   }
+};
+
+const readRawBody = async (request) => {
+  const chunks = [];
+  let receivedBytes = 0;
+
+  for await (const chunk of request) {
+    receivedBytes += chunk.length;
+
+    if (receivedBytes > maxJsonBodyBytes) {
+      throw new HttpError(413, "Request body is too large.");
+    }
+
+    chunks.push(chunk);
+  }
+
+  return Buffer.concat(chunks);
 };
 
 const isAdminHost = (requestUrl) => {
@@ -437,7 +456,17 @@ const routeRequest = async (request, response) => {
   }
 
   if (request.method === "GET" && requestUrl.pathname === "/api/auth/config") {
-    sendJson(response, 200, { googleEnabled: authService.isGoogleConfigured() });
+    sendJson(response, 200, {
+      googleEnabled: authService.isGoogleConfigured(),
+      stripeBillingEnabled: stripeBillingService.isConfigured()
+    });
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/stripe/webhook") {
+    const signature = request.headers["stripe-signature"];
+    const result = await stripeBillingService.handleWebhook(await readRawBody(request), Array.isArray(signature) ? signature[0] : signature);
+    sendJson(response, 200, result);
     return;
   }
 
@@ -510,6 +539,20 @@ const routeRequest = async (request, response) => {
         blockedAt: session.user.blockedAt
       }
     });
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/billing/checkout") {
+    const session = await getRequestSession();
+    const result = await stripeBillingService.createCheckoutSession(session.user.id);
+    sendJson(response, 200, result);
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/api/billing/portal") {
+    const session = await getRequestSession();
+    const result = await stripeBillingService.createPortalSession(session.user.id);
+    sendJson(response, 200, result);
     return;
   }
 

@@ -67,6 +67,28 @@ APP_ORIGIN=http://127.0.0.1:8787
 
 Add the same redirect URI in Google Cloud Console. If you run the Vite client separately on `http://127.0.0.1:5173/`, set `APP_ORIGIN=http://127.0.0.1:5173`.
 
+Stripe billing uses hosted Checkout for subscription signup and Stripe Customer Portal for self-service billing:
+
+```bash
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRICE_ID=price_...
+```
+
+Create a recurring Price in Stripe and use its `price_...` ID. For local webhook testing, run Stripe CLI:
+
+```bash
+stripe listen --forward-to http://127.0.0.1:8787/api/stripe/webhook
+```
+
+Then copy the emitted `whsec_...` value into `STRIPE_WEBHOOK_SECRET`. For production, point Stripe webhooks to:
+
+```text
+https://domen.domen/api/stripe/webhook
+```
+
+Subscribe these webhook events: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, and `customer.subscription.deleted`.
+
 ## Product Flow
 
 1. Open **Assets** and enter real holdings.
@@ -103,6 +125,9 @@ ADMIN_EMAILS=owner@domen.domen
 POSTGRES_PASSWORD=strong-password
 COINGECKO_DEMO_API_KEY=real-key
 GROQ_API_KEY=real-key
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRICE_ID=price_...
 ```
 
 2. Validate the app and Docker Compose configuration:

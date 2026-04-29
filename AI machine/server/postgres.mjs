@@ -39,7 +39,12 @@ const runMigrations = async (pool) => {
       is_blocked BOOLEAN NOT NULL DEFAULT FALSE,
       blocked_reason TEXT,
       blocked_at TIMESTAMPTZ,
-      admin_note TEXT
+      admin_note TEXT,
+      stripe_customer_id TEXT UNIQUE,
+      stripe_subscription_id TEXT UNIQUE,
+      stripe_subscription_status TEXT,
+      stripe_price_id TEXT,
+      stripe_current_period_end TIMESTAMPTZ
     );
 
     ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE;
@@ -48,6 +53,11 @@ const runMigrations = async (pool) => {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS blocked_reason TEXT;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS blocked_at TIMESTAMPTZ;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_note TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT UNIQUE;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT UNIQUE;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_status TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_price_id TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_current_period_end TIMESTAMPTZ;
 
     CREATE TABLE IF NOT EXISTS auth_sessions (
       id TEXT PRIMARY KEY,

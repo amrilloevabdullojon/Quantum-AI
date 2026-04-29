@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Activity, Atom, Ban, BookOpen, Cloud, LayoutDashboard, LogOut, PlaySquare, RefreshCw, Search, ShieldCheck, SlidersHorizontal, Wallet } from "lucide-react";
+import { Activity, Atom, Ban, BookOpen, Cloud, CreditCard, LayoutDashboard, LogOut, PlaySquare, RefreshCw, Search, ShieldCheck, SlidersHorizontal, Wallet } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { ManualPortfolioPosition, PortfolioSnapshot } from "../domain/portfolio/types";
 import { LocalAuthClient } from "../infrastructure/auth/LocalAuthClient";
@@ -159,6 +159,8 @@ export const App = () => {
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [isPortfolioReady, setIsPortfolioReady] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [billingError, setBillingError] = useState<string | null>(null);
+  const [isBillingLoading, setIsBillingLoading] = useState(false);
   const [manualPositions, setManualPositions] = useState<ManualPortfolioPosition[]>([]);
   const [snapshot, setSnapshot] = useState<PortfolioSnapshot | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -338,6 +340,25 @@ export const App = () => {
     setAuthUser(user);
   };
 
+  const hasActiveSubscription = ["active", "trialing"].includes(authUser?.billing?.status ?? "");
+
+  const handleBillingAction = async () => {
+    setBillingError(null);
+    setIsBillingLoading(true);
+
+    try {
+      if (hasActiveSubscription || authUser?.billing?.customerId) {
+        await authClient.openBillingPortal();
+      } else {
+        await authClient.startBillingCheckout();
+      }
+    } catch (error) {
+      setBillingError(error instanceof Error ? error.message : "Billing action failed.");
+    } finally {
+      setIsBillingLoading(false);
+    }
+  };
+
   if (!isAuthReady) {
     return (
       <div className="loading-screen">
@@ -429,11 +450,29 @@ export const App = () => {
               <span>{language === "ru" ? "Аккаунт" : "Account"}</span>
               <strong>{authUser.email}</strong>
               <small>{formatCurrencyPrecise(authUser.balanceUsd)}</small>
+              <small>{authUser.billing?.status ? `Stripe: ${authUser.billing.status}` : language === "ru" ? "Stripe: не подключен" : "Stripe: not connected"}</small>
             </div>
             <button className="sidebar-logout" type="button" onClick={() => void handleLogout()} aria-label={language === "ru" ? "Выйти" : "Logout"}>
               <LogOut size={15} strokeWidth={1.5} />
             </button>
           </div>
+          <button className="sidebar-billing-button" type="button" disabled={isBillingLoading} onClick={() => void handleBillingAction()}>
+            <CreditCard size={15} strokeWidth={1.5} />
+            <span>
+              {isBillingLoading
+                ? language === "ru"
+                  ? "Открытие"
+                  : "Opening"
+                : hasActiveSubscription || authUser.billing?.customerId
+                  ? language === "ru"
+                    ? "Управление оплатой"
+                    : "Manage billing"
+                  : language === "ru"
+                    ? "Подключить оплату"
+                    : "Start billing"}
+            </span>
+          </button>
+          {billingError ? <div className="sidebar-billing-error">{billingError}</div> : null}
           <div className="flex items-center gap-2 text-xs text-slate-300">
             <span className="h-2 w-2 bg-emeraldStrict" />
             {t.localServices}

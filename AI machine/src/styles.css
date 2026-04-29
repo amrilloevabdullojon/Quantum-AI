@@ -129,6 +129,36 @@ input {
   font-size: 11px;
 }
 
+.sidebar-billing-button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-bottom: 12px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  padding: 9px 10px;
+  color: #e2e8f0;
+  font-size: 12px;
+}
+
+.sidebar-billing-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.sidebar-billing-error {
+  margin-bottom: 12px;
+  border: 1px solid rgba(190, 18, 60, 0.45);
+  background: rgba(190, 18, 60, 0.12);
+  padding: 8px;
+  color: #fecdd3;
+  font-family: "Geist Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
 .sidebar-logout {
   display: grid;
   height: 32px;

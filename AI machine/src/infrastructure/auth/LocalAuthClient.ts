@@ -11,6 +11,13 @@ export interface AuthUser {
   isBlocked: boolean;
   blockedReason?: string | null;
   blockedAt?: string | null;
+  billing?: {
+    customerId?: string | null;
+    subscriptionId?: string | null;
+    status?: string | null;
+    priceId?: string | null;
+    currentPeriodEnd?: string | null;
+  };
   createdAt: string;
   lastLoginAt?: string | null;
 }
@@ -22,6 +29,7 @@ interface AuthResponse {
 
 interface AuthConfigResponse {
   googleEnabled: boolean;
+  stripeBillingEnabled?: boolean;
   error?: string;
 }
 
@@ -99,5 +107,33 @@ export class LocalAuthClient {
 
   startGoogleLogin(): void {
     window.location.assign(buildLocalApiUrl("/auth/google"));
+  }
+
+  async startBillingCheckout(): Promise<void> {
+    const response = await fetch(buildLocalApiUrl("/billing/checkout"), {
+      method: "POST",
+      credentials: "include"
+    });
+    const data = (await response.json().catch(() => ({}))) as { url?: string; error?: string };
+
+    if (!response.ok || !data.url) {
+      throw new Error(data.error || `Billing API returned ${response.status}`);
+    }
+
+    window.location.assign(data.url);
+  }
+
+  async openBillingPortal(): Promise<void> {
+    const response = await fetch(buildLocalApiUrl("/billing/portal"), {
+      method: "POST",
+      credentials: "include"
+    });
+    const data = (await response.json().catch(() => ({}))) as { url?: string; error?: string };
+
+    if (!response.ok || !data.url) {
+      throw new Error(data.error || `Billing API returned ${response.status}`);
+    }
+
+    window.location.assign(data.url);
   }
 }

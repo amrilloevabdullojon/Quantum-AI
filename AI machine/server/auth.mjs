@@ -204,6 +204,13 @@ const sanitizeUser = (row) => {
     isBlocked: Boolean(row.is_blocked),
     blockedReason: row.blocked_reason ?? "",
     blockedAt: row.blocked_at ?? null,
+    billing: {
+      customerId: row.stripe_customer_id ?? null,
+      subscriptionId: row.stripe_subscription_id ?? null,
+      status: row.stripe_subscription_status ?? null,
+      priceId: row.stripe_price_id ?? null,
+      currentPeriodEnd: row.stripe_current_period_end ?? null
+    },
     createdAt: row.created_at,
     lastLoginAt: row.last_login_at
   };
